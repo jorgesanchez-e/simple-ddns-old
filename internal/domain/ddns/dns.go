@@ -9,7 +9,7 @@ type FQDN interface {
 
 type Domain interface {
 	FQDN
-	IP() PublicIP
+	IP() string
 }
 
 type Updater interface {
