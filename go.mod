@@ -2,7 +2,10 @@ module github.com/jorgesanchez-e/simple-ddns
 
 go 1.20
 
-require github.com/go-playground/validator/v10 v10.25.0
+require (
+	github.com/go-playground/validator/v10 v10.25.0
+	github.com/mattn/go-sqlite3 v1.14.24
+)
 
 require (
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
