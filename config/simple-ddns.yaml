@@ -1,0 +1,11 @@
+---
+app:
+  storage:
+    sqlite:
+      db: /var/simple-ddns.db
+  public-ip-api:
+    ipify:
+      ipv4:
+        endpoint: https://api.ipify.org
+      ipv6:
+        endpoint: https://api6.ipify.org
