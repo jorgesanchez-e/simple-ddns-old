@@ -2,14 +2,16 @@ package ddns
 
 import "context"
 
-type FQDN interface {
-	Name() string
-	RegisterType() string
-}
+var (
+	IPV4Type RegType = "A"
+	IPV6Type RegType = "AAAA"
+)
 
-type Domain interface {
-	FQDN
-	IP() string
+type RegType string
+
+type Domain struct {
+	FQDN string
+	IP   string
 }
 
 type Updater interface {
