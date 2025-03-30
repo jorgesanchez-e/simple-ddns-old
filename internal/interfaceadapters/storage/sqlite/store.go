@@ -3,7 +3,9 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
 	"regexp"
 	"sync"
 	"time"
@@ -14,7 +16,8 @@ import (
 )
 
 const (
-	ipv4Regexp string = `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`
+	ipv4Regexp    string = `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`
+	sqlite_config string = "app.storage.sqlite"
 )
 
 var (
@@ -22,28 +25,52 @@ var (
 	str  = &store{}
 )
 
+type ConfigReader interface {
+	Find(node string) (io.Reader, error)
+}
+
 type store struct {
 	driver *sql.DB
 }
 
-func New(ctx context.Context) (*store, error) {
+type sqliteConfig struct {
+	DB string `json:"db"`
+}
+
+func New(cnf ConfigReader) (*store, error) {
 	var err error
+
+	cnfReader, err := cnf.Find(sqlite_config)
+	if err != nil {
+		return nil, fmt.Errorf("sqlite config not found, err: %w", err)
+	}
+
+	dataConfig, err := io.ReadAll(cnfReader)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read sqlite config, err: %w", err)
+	}
+
+	config := sqliteConfig{}
+	if err = json.Unmarshal(dataConfig, &config); err != nil {
+		return nil, fmt.Errorf("unable to decode sqlite config, err: %w", err)
+	}
+
 	db := &sql.DB{}
 
 	once.Do(func() {
-		db, err = sql.Open("sqlite3", "./app.db")
+		db, err = sql.Open("sqlite3", config.DB)
 		if err == nil {
 			str.driver = db
 		}
 	})
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to open sqlite database %s, err: %w", config.DB, err)
 	}
 
 	_, err = db.Exec(createTable)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to execute sql statement %s, err: %w", createTable, err)
 	}
 
 	return str, err
@@ -52,13 +79,13 @@ func New(ctx context.Context) (*store, error) {
 func (d *store) Save(ctx context.Context, fqdn string, ip string) error {
 	registerType, err := getRegisterType(fqdn, ip)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to save register, fqdn:%s, ip:%s, err: %w", fqdn, ip, err)
 	}
 
 	return d.saveRecord(ctx, fqdn, ip, registerType)
 }
 
-func (d *store) Last(ctx context.Context, fqdn string) (*ddns.PublicIPs, error) {
+func (d *store) Last(ctx context.Context, fqdn string) (ddns.PublicIPs, error) {
 	registerTypes := []string{string(ddns.IPV4Type), string(ddns.IPV6Type)}
 	publicIPs := ddns.PublicIPs{}
 
@@ -74,7 +101,7 @@ func (d *store) Last(ctx context.Context, fqdn string) (*ddns.PublicIPs, error) 
 
 		err := row.Scan(&ip)
 		if err != nil && err != sql.ErrNoRows {
-			return nil, err
+			return ddns.PublicIPs{}, fmt.Errorf("unable to read register, ip:%s, err: %w", ip, err)
 		}
 
 		if registerTypes[index] == string(ddns.IPV4Type) {
@@ -84,7 +111,7 @@ func (d *store) Last(ctx context.Context, fqdn string) (*ddns.PublicIPs, error) 
 		}
 	}
 
-	return &publicIPs, nil
+	return publicIPs, nil
 }
 
 func (d *store) saveRecord(ctx context.Context, fqdn string, ip string, rType string) error {
