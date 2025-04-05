@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	config_path     = "app.public-ip-api.ipify"
+	config_path     = "ddns.public-ip-api.ipify"
 	ipifyIPV4   int = iota
 	ipifyIPV6
 )
