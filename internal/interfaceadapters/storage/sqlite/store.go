@@ -17,7 +17,7 @@ import (
 
 const (
 	ipv4Regexp    string = `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`
-	sqlite_config string = "app.storage.sqlite"
+	sqlite_config string = "ddns.storage.sqlite"
 )
 
 var (
@@ -76,18 +76,24 @@ func New(cnf ConfigReader) (*store, error) {
 	return str, err
 }
 
-func (d *store) Save(ctx context.Context, fqdn string, ip string) error {
-	registerType, err := getRegisterType(fqdn, ip)
-	if err != nil {
-		return fmt.Errorf("unable to save register, fqdn:%s, ip:%s, err: %w", fqdn, ip, err)
+func (d *store) Update(ctx context.Context, records []ddns.DNSRecord) error {
+	for _, record := range records {
+		registerType, err := getDNSRegType(record.FQDN, record.IP)
+		if err != nil {
+			return fmt.Errorf("unable to get register type, fqdn:%s, ip:%s, err: %w", record.FQDN, record.IP, err)
+		}
+
+		if err = d.saveRecord(ctx, record.FQDN, record.IP, registerType); err != nil {
+			return fmt.Errorf("unable to save register, fqdn:%s, ip:%s, err: %w", record.FQDN, record.IP, err)
+		}
 	}
 
-	return d.saveRecord(ctx, fqdn, ip, registerType)
+	return nil
 }
 
-func (d *store) Last(ctx context.Context, fqdn string) (ddns.PublicIPs, error) {
-	registerTypes := []string{string(ddns.IPV4Type), string(ddns.IPV6Type)}
-	publicIPs := ddns.PublicIPs{}
+func (d *store) Last(ctx context.Context, fqdn string) (*ddns.DNSRecord, error) {
+	registerTypes := []string{string(ddns.IPV4DNSRec), string(ddns.IPV6DNSRec)}
+	record := &ddns.DNSRecord{}
 
 	for index := 0; index < len(registerTypes); index++ {
 		row := d.driver.QueryRowContext(
@@ -98,20 +104,19 @@ func (d *store) Last(ctx context.Context, fqdn string) (ddns.PublicIPs, error) {
 		)
 
 		ip := ""
+		recType := ""
 
-		err := row.Scan(&ip)
+		err := row.Scan(&ip, &recType)
 		if err != nil && err != sql.ErrNoRows {
-			return ddns.PublicIPs{}, fmt.Errorf("unable to read register, ip:%s, err: %w", ip, err)
+			return nil, fmt.Errorf("unable to read register, ip:%s, err: %w", ip, err)
 		}
 
-		if registerTypes[index] == string(ddns.IPV4Type) {
-			publicIPs.IPV4 = ip
-		} else {
-			publicIPs.IPV6 = ip
-		}
+		record.IP = ip
+		record.FQDN = fqdn
+		record.Type = ddns.IPDNSRecType(recType)
 	}
 
-	return publicIPs, nil
+	return record, nil
 }
 
 func (d *store) saveRecord(ctx context.Context, fqdn string, ip string, rType string) error {
@@ -135,7 +140,7 @@ func (d *store) saveRecord(ctx context.Context, fqdn string, ip string, rType st
 	return nil
 }
 
-func getRegisterType(fqdn, ip string) (string, error) {
+func getDNSRegType(fqdn, ip string) (string, error) {
 	var err error
 	validator := validator.New()
 	registerType := ""
@@ -153,12 +158,12 @@ func getRegisterType(fqdn, ip string) (string, error) {
 		if err = validator.Var(ip, "ipv4"); err != nil {
 			return "", fmt.Errorf("invalid ipv4 [%s], error: %w", ip, err)
 		}
-		registerType = string(ddns.IPV4Type)
+		registerType = string(ddns.IPV4DNSRec)
 	} else {
 		if err = validator.Var(ip, "ipv6"); err != nil {
 			return "", fmt.Errorf("invalid ipv6[%s], error: %w", ip, err)
 		}
-		registerType = string(ddns.IPV6Type)
+		registerType = string(ddns.IPV6DNSRec)
 	}
 
 	return registerType, nil

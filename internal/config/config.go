@@ -75,7 +75,7 @@ func (c *config) Find(node string) (io.Reader, error) {
 		}
 
 		return buf, nil
+	} else {
+		return nil, fmt.Errorf("unable to find config:%s", node)
 	}
-
-	return nil, nil
 }

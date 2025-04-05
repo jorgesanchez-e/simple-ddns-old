@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	storage_config      string = "app.storage"
-	sqlite_config       string = "app.storage.sqlite"
+	storage_config      string = "ddns.storage"
+	sqlite_config       string = "ddns.storage.sqlite"
 	sqlite_storage_name string = "sqlite"
 )
 
@@ -35,10 +35,6 @@ func NewService(cnf ConfigReader) (ddns.Repository, error) {
 	}
 
 	if _, exists := config[sqlite_storage_name]; exists {
-		if storageConfigReader, err = cnf.Find(sqlite_config); err != nil {
-			return nil, err
-		}
-
 		return sqlite.New(cnf)
 	}
 

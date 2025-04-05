@@ -2,18 +2,19 @@ package ddns
 
 import "context"
 
-var (
-	IPV4Type RegType = "A"
-	IPV6Type RegType = "AAAA"
+const (
+	IPV4DNSRec IPDNSRecType = "A"
+	IPV6DNSRec IPDNSRecType = "AAAA"
 )
 
-type RegType string
+type IPDNSRecType string
 
-type Domain struct {
+type DNSRecord struct {
 	FQDN string
+	Type IPDNSRecType
 	IP   string
 }
 
-type Updater interface {
-	Update(ctx context.Context, domain Domain) error
+type RecordUpdater interface {
+	Update(ctx context.Context, rec []DNSRecord) error
 }

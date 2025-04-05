@@ -10,7 +10,7 @@ import (
 
 const (
 	ipify_service         string = "ipify"
-	public_ip_config_path string = "app.public-ip-api"
+	public_ip_config_path string = "ddns.public-ip-api"
 )
 
 type ConfigReader interface {
