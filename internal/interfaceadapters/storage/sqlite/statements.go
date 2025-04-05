@@ -1,7 +1,7 @@
 package sqlite
 
 const (
-	createTable string = `CREATE TABLE IF NOT EXISTS domains (
+	createTable string = `CREATE TABLE IF NOT EXISTS ddns_domains (
 		fqdn TEXT NOT NULL, 
 		update_time TEXT NOT NULL,
 		register_type TEXT NOT NULL,
@@ -9,18 +9,17 @@ const (
 		active BOOL NOT NULL
 	)`
 
-	lastRegister string = `SELECT ip FROM domains WHERE 
+	lastRegister string = `SELECT ip, register_type FROM ddns_domains WHERE 
 		fqdn = ? AND
-		register_type = ? AND 
 		active = true
 	`
 
-	insertRegister string = `INSERT INTO domains 
+	insertRegister string = `INSERT INTO ddns_domains 
 		(fqdn, update_time, register_type, ip, active)
 		VALUES(?,?,?,?,?)	
 	`
 
-	updateRegister string = `UPDATE domains SET active = false
+	updateRegister string = `UPDATE ddns_domains SET active = false
 		WHERE fqdn = ? AND register_type = ? AND active = true
 	`
 )
