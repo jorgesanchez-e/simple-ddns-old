@@ -7,6 +7,7 @@ import (
 
 	"github.com/jorgesanchez-e/simple-ddns/internal/config"
 	"github.com/jorgesanchez-e/simple-ddns/internal/domain/ddns"
+	"github.com/jorgesanchez-e/simple-ddns/internal/interfaceadapters/dns"
 	"github.com/jorgesanchez-e/simple-ddns/internal/interfaceadapters/publicip"
 	"github.com/jorgesanchez-e/simple-ddns/internal/interfaceadapters/storage"
 )
@@ -25,6 +26,11 @@ func main() {
 	}
 
 	pip, err := publicip.NewService(cnf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dnsServer, err := dns.NewService(ctx, cnf)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,6 +67,20 @@ func main() {
 	}
 
 	rec, err := repository.Last(ctx, "home6.jorgesanchez-e.dev")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("updating reg: %s with ip %s", "vpn.jorge-sanchez.net", ipv4)
+
+	err = dnsServer.Update(ctx, []ddns.DNSRecord{
+		{
+			FQDN: "vpn.jorge-sanchez.net",
+			Type: ddns.IPV4DNSRec,
+			IP:   ipv4,
+		},
+	})
+
 	if err != nil {
 		log.Fatal(err)
 	}
