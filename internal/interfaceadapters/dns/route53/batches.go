@@ -30,8 +30,8 @@ func (r53 *updater) batches(changes []ddns.DNSRecord) []batch {
 						{
 							Action: types.ChangeActionUpsert,
 							ResourceRecordSet: &types.ResourceRecordSet{
-								Name: aws.String(rec.fqdn),
-								Type: route53RecordType(rec.recordType),
+								Name: aws.String(rec.dnsRec.FQDN),
+								Type: route53RecordType(string(rec.dnsRec.Type)),
 								TTL:  aws.Int64(300),
 								ResourceRecords: []types.ResourceRecord{
 									{

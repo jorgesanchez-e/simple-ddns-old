@@ -61,20 +61,21 @@ func New(cnf ConfigReader) (*publicIPs, error) {
 	}
 
 	return &publicIPs{
-		urlIPV4: config.IPV4.EndPoint,
-		urlIPV6: config.IPV6.EndPoint,
+		checkPeriodInMins: int64(config.CheckPeriodInMins),
+		urlIPV4:           config.IPV4.EndPoint,
+		urlIPV6:           config.IPV6.EndPoint,
 	}, nil
 }
 
 func (pip publicIPs) ipv4(ctx context.Context) *string {
 	ip, err := pip.getIP(ctx, ipifyIPV4)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("unable to get ipv4")
+		log.WithFields(log.Fields{"error": err}).Warning("unable to get ipv4")
 		return nil
 	}
 
 	if err = validator.New().Var(ip, "ipv4"); err != nil {
-		log.WithFields(log.Fields{"ipv4": ip, "error": err}).Error("invalid ipv4")
+		log.WithFields(log.Fields{"ipv4": ip, "error": err}).Warning("invalid ipv4")
 		return nil
 	}
 
@@ -84,12 +85,12 @@ func (pip publicIPs) ipv4(ctx context.Context) *string {
 func (pip publicIPs) ipv6(ctx context.Context) *string {
 	ip, err := pip.getIP(ctx, ipifyIPV6)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("unable to get ipv6")
+		log.WithFields(log.Fields{"error": err}).Warning("unable to get ipv6")
 		return nil
 	}
 
 	if err = validator.New().Var(ip, "ipv6"); err != nil {
-		log.WithFields(log.Fields{"ipv6": ip, "error": err}).Error("invalid ipv6")
+		log.WithFields(log.Fields{"ipv6": ip, "error": err}).Warning("invalid ipv6")
 		return nil
 	}
 

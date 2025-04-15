@@ -6,15 +6,15 @@ import (
 
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
+	"github.com/jorgesanchez-e/simple-ddns/internal/domain/ddns"
 )
 
 type records map[string]record
 
 type record struct {
-	fqdn       string
-	recordType string
-	zoneID     string
-	client     *route53.Client
+	dnsRec ddns.DNSRecord
+	zoneID string
+	client *route53.Client
 }
 
 func (r53 *updater) getManagedRecords(ctx context.Context, cnf config) error {
@@ -22,9 +22,11 @@ func (r53 *updater) getManagedRecords(ctx context.Context, cnf config) error {
 	for _, configRecord := range cnf.Records {
 		key := fmt.Sprintf("%s:%s", configRecord.FQDN, configRecord.Type)
 		managedRecords[key] = record{
-			fqdn:       configRecord.FQDN,
-			recordType: configRecord.Type,
-			zoneID:     configRecord.ZoneID,
+			dnsRec: ddns.DNSRecord{
+				FQDN: configRecord.FQDN,
+				Type: ddns.IPDNSRecType(configRecord.Type),
+			},
+			zoneID: configRecord.ZoneID,
 		}
 
 		credentialFiles := make([]string, 0)

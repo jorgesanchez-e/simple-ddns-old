@@ -57,7 +57,7 @@ func (r53 *updater) Update(ctx context.Context, recs []ddns.DNSRecord) error {
 
 	for index, batch := range r53.batches(recs) {
 		if batch.client == nil {
-			output, err := r53.globalClient.ChangeResourceRecordSets(ctx, &route53.ChangeResourceRecordSetsInput{
+			_, err := r53.globalClient.ChangeResourceRecordSets(ctx, &route53.ChangeResourceRecordSetsInput{
 				ChangeBatch:  &batch.route53Batch[index],
 				HostedZoneId: aws.String(batch.zoneID),
 			})
@@ -65,13 +65,16 @@ func (r53 *updater) Update(ctx context.Context, recs []ddns.DNSRecord) error {
 			if err != nil {
 				return fmt.Errorf("unable to update the record, err:%w", err)
 			}
-			fmt.Printf("%v", output)
 		}
 	}
 
 	return nil
 }
 
-func (r53 *updater) ManagedDomains() []string {
-	return r53.recs.getDomains()
+func (r53 *updater) ManagedDomains() []ddns.DNSRecord {
+	records := make([]ddns.DNSRecord, 0)
+	for _, value := range r53.recs {
+		records = append(records, value.dnsRec)
+	}
+	return records
 }

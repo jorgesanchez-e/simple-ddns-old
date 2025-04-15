@@ -9,11 +9,9 @@ const (
 		active BOOL NOT NULL
 	)`
 
-	lastRegister string = `SELECT ip, register_type FROM ddns_domains WHERE 
-		fqdn = ? AND
-		active = true
+	lastRegister string = `SELECT fqdn, ip, register_type FROM ddns_domains WHERE 
+		active = true and fqdn = ? and register_type = ?
 	`
-
 	insertRegister string = `INSERT INTO ddns_domains 
 		(fqdn, update_time, register_type, ip, active)
 		VALUES(?,?,?,?,?)	

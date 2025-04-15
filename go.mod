@@ -10,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/route53 v1.51.0
 	github.com/go-playground/validator/v10 v10.25.0
 	github.com/mattn/go-sqlite3 v1.14.24
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.20.1
 	gopkg.in/yaml.v2 v2.4.0
 )

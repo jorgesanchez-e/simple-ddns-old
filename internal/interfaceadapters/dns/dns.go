@@ -47,3 +47,12 @@ func (du *dnsUpdater) Update(ctx context.Context, recs []ddns.DNSRecord) error {
 
 	return nil
 }
+
+func (du *dnsUpdater) ManagedDomains() []ddns.DNSRecord {
+	domains := make([]ddns.DNSRecord, 0)
+	for _, manager := range du.managers {
+		domains = append(domains, manager.ManagedDomains()...)
+	}
+
+	return domains
+}
