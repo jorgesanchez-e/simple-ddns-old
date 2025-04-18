@@ -96,6 +96,10 @@ func (d *store) Last(ctx context.Context, rec ddns.DNSRecord) (*ddns.DNSRecord, 
 
 	err := d.driver.QueryRowContext(ctx, lastRegister, rec.FQDN, rec.Type).Scan(&fqdn, &ip, &registerType)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return &rec, nil
+		}
+
 		return nil, fmt.Errorf("unable to read registers, err:%w", err)
 	}
 
