@@ -55,10 +55,11 @@ func (r53 *updater) Update(ctx context.Context, recs []ddns.DNSRecord) error {
 		return nil
 	}
 
-	for index, batch := range r53.batches(recs) {
+	batches := r53.batches(recs)
+	for _, batch := range batches {
 		if batch.client == nil {
 			_, err := r53.globalClient.ChangeResourceRecordSets(ctx, &route53.ChangeResourceRecordSetsInput{
-				ChangeBatch:  &batch.route53Batch[index],
+				ChangeBatch:  &batch.route53Batch[0],
 				HostedZoneId: aws.String(batch.zoneID),
 			})
 
