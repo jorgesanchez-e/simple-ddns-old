@@ -2,13 +2,17 @@ package ipify
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/jorgesanchez-e/simple-ddns/internal/domain/ddns"
 )
 
 const (
@@ -24,12 +28,14 @@ type ConfigReader interface {
 }
 
 type publicIPs struct {
-	urlIPV4 string
-	urlIPV6 string
+	checkPeriodInMins int64
+	urlIPV4           string
+	urlIPV6           string
 }
 
 type ipifyConfig struct {
-	IPV4 struct {
+	CheckPeriodInMins int `yaml:"check-period-mins"`
+	IPV4              struct {
 		EndPoint string
 	}
 	IPV6 struct {
@@ -50,40 +56,45 @@ func New(cnf ConfigReader) (*publicIPs, error) {
 		return nil, fmt.Errorf("unable to read ipify config, err: %w", err)
 	}
 
-	if err = json.Unmarshal(dataConfig, &config); err != nil {
+	if err = yaml.Unmarshal(dataConfig, &config); err != nil {
 		return nil, fmt.Errorf("unable to decode ipify config, err: %w", err)
 	}
 
 	return &publicIPs{
-		urlIPV4: config.IPV4.EndPoint,
-		urlIPV6: config.IPV6.EndPoint,
+		checkPeriodInMins: int64(config.CheckPeriodInMins),
+		urlIPV4:           config.IPV4.EndPoint,
+		urlIPV6:           config.IPV6.EndPoint,
 	}, nil
 }
 
-func (pip publicIPs) IPV4(ctx context.Context) (string, error) {
+func (pip publicIPs) ipv4(ctx context.Context) *string {
 	ip, err := pip.getIP(ctx, ipifyIPV4)
 	if err != nil {
-		return "", fmt.Errorf("get ipv4 ip error, err: %w", err)
+		log.WithFields(log.Fields{"error": err}).Warning("unable to get ipv4")
+		return nil
 	}
 
 	if err = validator.New().Var(ip, "ipv4"); err != nil {
-		return "", fmt.Errorf("invalid ipv4 [%s], format error: %w", ip, err)
+		log.WithFields(log.Fields{"ipv4": ip, "error": err}).Warning("invalid ipv4")
+		return nil
 	}
 
-	return ip, nil
+	return &ip
 }
 
-func (pip publicIPs) IPV6(ctx context.Context) (string, error) {
+func (pip publicIPs) ipv6(ctx context.Context) *string {
 	ip, err := pip.getIP(ctx, ipifyIPV6)
 	if err != nil {
-		return "", fmt.Errorf("get ipv6 ip error, err: %w", err)
+		log.WithFields(log.Fields{"error": err}).Warning("unable to get ipv6")
+		return nil
 	}
 
 	if err = validator.New().Var(ip, "ipv6"); err != nil {
-		return "", fmt.Errorf("invalid ipv6 [%s], format error: %w", ip, err)
+		log.WithFields(log.Fields{"ipv6": ip, "error": err}).Warning("invalid ipv6")
+		return nil
 	}
 
-	return ip, nil
+	return &ip
 }
 
 func (pip publicIPs) getIP(ctx context.Context, ipType int) (_ string, err error) {
@@ -122,4 +133,15 @@ func (pip publicIPs) getIP(ctx context.Context, ipType int) (_ string, err error
 	}
 
 	return string(ip), nil
+}
+
+func (pip publicIPs) PublicIPs(ctx context.Context) ddns.IPs {
+	return ddns.IPs{
+		IPV4: pip.ipv4(ctx),
+		IPV6: pip.ipv6(ctx),
+	}
+}
+
+func (pip publicIPs) CheckPeriod() time.Duration {
+	return time.Duration(pip.checkPeriodInMins * int64(time.Minute))
 }

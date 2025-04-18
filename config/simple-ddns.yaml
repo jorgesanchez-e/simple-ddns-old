@@ -12,18 +12,26 @@ ddns:
         endpoint: https://api6.ipify.org
   dns-server:
     aws:
-      route53:
+      - account: main
         credentials-file: "/usr/local/etc/simple-ddns/aws/credentials"
         records:
           - fqdn: vpn.home.com.
             type: A
             zone-id: "000000000000000000000"
-            credentials-file: "/usr/local/etc/simple-ddns/aws/another-account/credentials"
           - fqdn: jenkins.home.com.
             type: A
             zone-id: "111111111111111111111"
+      - account: secondary
+        credentials-file: "/usr/local/etc/simple-ddns/aws/credentials"
+        records:
+          - fqdn: vpn.home.com.
+            type: A
+            zone-id: "000000000000000000000"
+          - fqdn: jenkins.home.com.
+            type: A
+            zone-id: "111111111111111111111"              
     digital-ocean:
-      domains:
+      - account: main
         api-key: "API-KEY"
         records:
           - fqdn: vpn.jorgesanchez-e.dev.

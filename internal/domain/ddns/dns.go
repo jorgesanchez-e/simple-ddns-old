@@ -17,4 +17,5 @@ type DNSRecord struct {
 
 type RecordUpdater interface {
 	Update(ctx context.Context, rec []DNSRecord) error
+	ManagedDomains() []DNSRecord
 }

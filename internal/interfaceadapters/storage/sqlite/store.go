@@ -91,32 +91,23 @@ func (d *store) Update(ctx context.Context, records []ddns.DNSRecord) error {
 	return nil
 }
 
-func (d *store) Last(ctx context.Context, fqdn string) (*ddns.DNSRecord, error) {
-	registerTypes := []string{string(ddns.IPV4DNSRec), string(ddns.IPV6DNSRec)}
-	record := &ddns.DNSRecord{}
+func (d *store) Last(ctx context.Context, rec ddns.DNSRecord) (*ddns.DNSRecord, error) {
+	var fqdn, ip, registerType string
 
-	for index := 0; index < len(registerTypes); index++ {
-		row := d.driver.QueryRowContext(
-			ctx,
-			lastRegister,
-			fqdn,
-			registerTypes[index],
-		)
-
-		ip := ""
-		recType := ""
-
-		err := row.Scan(&ip, &recType)
-		if err != nil && err != sql.ErrNoRows {
-			return nil, fmt.Errorf("unable to read register, ip:%s, err: %w", ip, err)
+	err := d.driver.QueryRowContext(ctx, lastRegister, rec.FQDN, rec.Type).Scan(&fqdn, &ip, &registerType)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &rec, nil
 		}
 
-		record.IP = ip
-		record.FQDN = fqdn
-		record.Type = ddns.IPDNSRecType(recType)
+		return nil, fmt.Errorf("unable to read registers, err:%w", err)
 	}
 
-	return record, nil
+	if rec.IP == ip {
+		return nil, nil
+	}
+
+	return &rec, nil
 }
 
 func (d *store) saveRecord(ctx context.Context, fqdn string, ip string, rType string) error {
